@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import bcrypt from "bcrypt";
 
 const userSchema = new mongoose.Schema({
     name: {
@@ -40,5 +41,23 @@ const userSchema = new mongoose.Schema({
         type: Date,
         default: Date.now,
     },
-
 });
+
+
+const User = mongoose.model("User", userSchema);
+
+// document middlewares one out of 4 types of mongoose middlewares
+// pre-save hook to hash the password before saving the user to the database
+userSchema.pre("save", async function(next){
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(this.password, salt);
+    this.password = hashedPassword;
+    next();
+});
+
+userSchema.methods.comparePassword = async function(password){
+    const isValidPassword = await bcrypt.compare(password, this.password);
+    return isValidPassword;
+};  
+
+export default User;
